@@ -7,6 +7,8 @@ import { orchestratorAgent } from './../agents/orchestratorAgent.js';
 import { revisionAgent } from './../agents/revisionAgent.js';
 import { getMemory, updateMemory } from "../agents/memoryAgent.js";
 
+
+// 🔥 MERGE WEAK AREAS (GOOD - KEEP)
 const mergeWeakAreas = (existingWeakAreas = [], newWeakAreas = []) => {
   const map = new Map();
 
@@ -26,7 +28,6 @@ const mergeWeakAreas = (existingWeakAreas = [], newWeakAreas = []) => {
     if (existing) {
       existing.count += 1;
       existing.lastSeen = new Date();
-      map.set(topic, existing);
     } else {
       map.set(topic, {
         topic,
@@ -40,7 +41,7 @@ const mergeWeakAreas = (existingWeakAreas = [], newWeakAreas = []) => {
 };
 
 
-// 🔥 AGENT LOGGER
+// 🔥 LOGGER
 const logAgent = async (sessionId, agent, output) => {
   console.log(`\n🧠 ${agent.toUpperCase()} OUTPUT:`);
   console.log(JSON.stringify(output, null, 2));
@@ -68,17 +69,15 @@ export const runWorkflow = async (req, res) => {
     const userId = req.userId;
 
     console.log("\n🚀 START WORKFLOW");
-    console.log("Session:", sessionId);
 
-    // 🧠 STEP 1: GET MEMORY
+    // 🧠 STEP 1: MEMORY
     let memory = await getMemory(sessionId);
 
-    // 🔗 LINK USER + SESSION
     await updateMemory(sessionId, { userId });
 
     await logAgent(sessionId, "memory_before", memory);
 
-    // 📅 STEP 2: SKIPPED DAYS + ACTIVITY
+    // 🔥 STEP 2: STREAK + ACTIVITY (FIXED)
     const today = new Date();
     const lastActive = new Date(memory.lastActiveDate || today);
 
@@ -86,8 +85,19 @@ export const runWorkflow = async (req, res) => {
       (today - lastActive) / (1000 * 60 * 60 * 24)
     );
 
+    let streak = memory.streak || 0;
+
+    if (diffDays === 1) {
+      streak += 1;
+    } else if (diffDays > 1) {
+      streak = 1;
+    }
+
+    const skippedDays = diffDays > 1 ? diffDays - 1 : 0;
+
     await updateMemory(sessionId, {
-      skippedDays: diffDays > 1 ? diffDays : 0,
+      streak,
+      skippedDays,
       lastActiveDate: today
     });
 
@@ -109,15 +119,14 @@ export const runWorkflow = async (req, res) => {
 
     const topic = memory.currentTopic || plan.currentTopic;
 
-    // 📚 STEP 4: RESOURCES
+    // 📚 STEP 4
     const resources = await resourceAgent({ topic, memory });
     await logAgent(sessionId, "resource", resources);
 
-    // 📝 STEP 5: TASKS
     const tasks = await taskAgent({ topic, memory });
     await logAgent(sessionId, "task", tasks);
 
-    // 📊 STEP 6: EVALUATION
+    // 📊 STEP 5: EVALUATION
     let evaluation = null;
 
     if (!answers) {
@@ -127,17 +136,13 @@ export const runWorkflow = async (req, res) => {
       evaluation = await evaluatorAgent({ topic, answers, memory });
       await logAgent(sessionId, "evaluation", evaluation);
 
-      // 📊 SCORE HISTORY
+      // 📊 SCORES
       const updatedScores = [
         ...(memory.scores || []),
-        {
-          topic,
-          score: evaluation.score,
-          date: new Date()
-        }
+        { topic, score: evaluation.score, date: new Date() }
       ];
 
-      // 🧠 WEAK AREA TRACKING
+      // 🧠 WEAK AREAS
       const updatedWeakAreas = mergeWeakAreas(
         memory.weakAreas || [],
         evaluation.weakAreas || []
@@ -177,33 +182,29 @@ export const runWorkflow = async (req, res) => {
         ];
       }
 
-      // 🔥 STREAK SYSTEM
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
+      // 📚 🔥 LEARNING HISTORY (ADDED)
+      const updatedHistory = [
+        ...(memory.learningHistory || []),
+        {
+          topic,
+          action: "completed",
+          score: evaluation.score,
+          date: new Date()
+        }
+      ];
 
-      let streak = memory.streak || 0;
-
-      if (
-        memory.lastActiveDate &&
-        new Date(memory.lastActiveDate).toDateString() ===
-          yesterday.toDateString()
-      ) {
-        streak += 1;
-      } else {
-        streak = 1;
-      }
-
-      // 💾 SAVE ALL
+      // 💾 SAVE
       await updateMemory(sessionId, {
         scores: updatedScores,
         weakAreas: updatedWeakAreas,
         dailyProgress: updatedDailyProgress,
-        status: evaluation.performanceLevel,
-        streak
+        learningHistory: updatedHistory,
+        streak,
+        lastActiveDate: new Date()
       });
     }
 
-    // 🧠 STEP 7: ORCHESTRATOR
+    // 🧠 STEP 6
     const decision = await orchestratorAgent({
       memory,
       evaluation
@@ -211,7 +212,7 @@ export const runWorkflow = async (req, res) => {
 
     await logAgent(sessionId, "orchestrator", decision);
 
-    // 🔁 STEP 8: REVISION
+    // 🔁 STEP 7
     let revision = null;
 
     if (decision.action === "assign_revision") {
@@ -223,18 +224,18 @@ export const runWorkflow = async (req, res) => {
       await logAgent(sessionId, "revision", revision);
     }
 
-    // 🔥 STEP 9: FINAL MEMORY UPDATE
+    // 🔥 FINAL UPDATE
     await updateMemory(sessionId, {
       currentTopic: decision.nextTopic || topic,
       difficulty: decision.difficultyAction || memory.difficulty
     });
 
     const finalMemory = await getMemory(sessionId);
+
     await logAgent(sessionId, "memory_after", finalMemory);
 
     console.log("✅ WORKFLOW COMPLETE");
 
-    // 🚀 RESPONSE
     res.json({
       success: true,
       sessionId,

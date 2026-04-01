@@ -1,77 +1,88 @@
 import { callGemini } from "../services/geminiService.js";
 
 export const plannerAgent = async ({ goal, memory }) => {
-  const prompt = `
-You are an expert AI Learning Planner Agent.
 
-Your job is to create a structured, personalized learning roadmap.
+  const currentDay = memory?.currentDay || 1;
+
+  const prompt = `
+You are an AI Learning Planner in a STATEFUL system.
+
+⚠️ IMPORTANT:
+You MUST use previous learning data to generate next plan.
 
 ---
 
-# 🎯 USER GOAL
+# 🎯 GOAL
 "${goal}"
 
----
-
-# 🧠 USER CONTEXT (MEMORY)
-- Current Topic: ${memory?.currentTopic || "None"}
-- Difficulty Level: ${memory?.difficulty || "beginner"}
-- Weak Areas: ${memory?.weakAreas?.join(", ") || "None"}
-- Previous Scores: ${memory?.scores?.join(", ") || "None"}
+# 📍 CURRENT DAY
+${currentDay}
 
 ---
 
-# ⚙️ INSTRUCTIONS
+# 🧠 MEMORY (VERY IMPORTANT)
 
-1. Break the goal into 3 levels:
-   - Beginner
-   - Intermediate
-   - Advanced
+## Previous Days Performance:
+${memory?.dailyLogs?.map(d =>
+  `Day ${d.day}: ${d.topic} → Score: ${d.score}`
+).join("\n") || "No previous data"}
 
-2. Each level must have:
-   - Clear topics (ordered logically)
-   - Real-world progression
+## Weak Areas:
+${memory?.weakAreas?.map(w => `${w.topic} (${w.count})`).join(", ") || "None"}
 
-3. Personalize roadmap:
-   - If weak areas exist → include reinforcement topics
-   - Adjust based on difficulty
-
-4. Select CURRENT TOPIC:
-   - If no memory → first beginner topic
-   - Else → continue from last progress
+## Current Difficulty:
+${memory?.difficulty || "beginner"}
 
 ---
 
-# 📦 OUTPUT FORMAT (STRICT JSON ONLY)
+# ⚙️ TASK
+
+Generate NEXT 3 DAYS:
+
+- Day ${currentDay}
+- Day ${currentDay + 1}
+- Day ${currentDay + 2}
+
+---
+
+# 🧠 ADAPTIVE RULES
+
+1. If last scores are LOW:
+   → reduce difficulty
+   → add reinforcement topics
+
+2. If scores are HIGH:
+   → increase difficulty
+   → move forward
+
+3. If weak areas exist:
+   → include them again
+
+4. Maintain logical topic order
+
+---
+
+# 📦 OUTPUT (STRICT JSON)
 
 {
-  "roadmap": [
-    {
-      "level": "beginner",
-      "topics": ["topic1", "topic2"]
-    },
-    {
-      "level": "intermediate",
-      "topics": []
-    },
-    {
-      "level": "advanced",
-      "topics": []
-    }
+  "days": [
+    { "day": ${currentDay}, "topic": "", "difficulty": "" },
+    { "day": ${currentDay + 1}, "topic": "", "difficulty": "" },
+    { "day": ${currentDay + 2}, "topic": "", "difficulty": "" }
   ],
-  "currentTopic": "selected topic",
-  "reason": "Why this topic was selected",
-  "estimatedDuration": "e.g. 2 weeks"
+
+  "reason": "",
+  "adaptation": ""
 }
 
 ---
 
 # 🚫 RULES
 
-- DO NOT return text outside JSON
-- DO NOT explain outside JSON
-- DO NOT leave fields empty
-- Ensure topics are realistic and practical
+- Must use memory
+- Must adapt
+- Only 3 days
+- No extra text
 
 Generate now.
 `;

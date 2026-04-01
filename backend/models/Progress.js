@@ -93,8 +93,44 @@ const progressSchema = new mongoose.Schema({
     topic: String,
     score: Number,
     tasksCompleted: Number
+  },
+  
+],// 📚 FULL LEARNING HISTORY (IMPORTANT)
+learningHistory: [
+  {
+    topic: String,
+    action: String, // started / completed / revision
+    score: Number,
+    date: { type: Date, default: Date.now }
   }
-]
+],
+
+// 🎯 USER PLAN
+totalDays: Number,
+currentDay: {
+  type: Number,
+  default: 1
+},
+
+goal: String,
+
+// 📅 DAILY RECORD (ONLY COMPLETED DAYS)
+dailyLogs: [
+  {
+    day: Number,
+    topic: String,
+    score: Number,
+    difficulty: String,
+    status: String, // completed / revision
+    date: { type: Date, default: Date.now }
+  }
+],
+
+// 🔥 STREAK TRACKING
+streak: {
+  type: Number,
+  default: 0
+},
 
 }, { timestamps: true });
 

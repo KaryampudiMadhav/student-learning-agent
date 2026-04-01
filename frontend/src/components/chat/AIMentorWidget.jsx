@@ -1,21 +1,88 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, SendHorizontal, Sparkles, X } from 'lucide-react'
+import { Brain, LifeBuoy, SendHorizontal, Sparkles, X } from 'lucide-react'
 import { workflowApi } from '../../lib/api'
 import { useAppStore } from '../../store/useAppStore'
 
 void motion
 
+const quickPrompts = [
+  'Explain this topic in simple steps',
+  'Give me real-world examples',
+  'What am I doing wrong and how to fix it?',
+  'Create a 30-minute revision plan',
+]
+
+function buildDoubtGoal(question, context) {
+  const recentTurns = context.history
+    .slice(-4)
+    .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
+    .join('\n')
+
+  const weakAreas = (context.progress?.weakAreas || [])
+    .map((item) => item.topic)
+    .filter(Boolean)
+    .join(', ')
+
+  const scores = (context.progress?.scores || [])
+    .slice(-5)
+    .map((item) => item.score)
+    .join(', ')
+
+  return `
+You are a high-quality doubt-solving learning assistant.
+
+Student question: "${question}"
+
+Student context:
+- Active goal: ${context.currentGoal || 'Not set'}
+- Current topic: ${context.progress?.currentTopic || context.workflow?.planner?.currentTopic || 'Unknown'}
+- Difficulty: ${context.progress?.difficulty || 'beginner'}
+- Weak areas: ${weakAreas || 'None'}
+- Recent scores: ${scores || 'None'}
+
+Recent conversation:
+${recentTurns || 'No previous turns'}
+
+Instructions:
+1) Solve the user doubt clearly for their current level.
+2) Add simple explanation + practical example + common mistakes.
+3) Add a short action plan for next 20-30 minutes.
+4) If useful, suggest one practice task and one resource type.
+5) Keep tone supportive and confidence-building.
+`
+}
+
 function extractMentorText(payload) {
   const data = payload?.data || {}
-  const lines = []
+  const lines = ['Here is your doubt-focused guidance:']
 
-  if (data.planner?.reason) lines.push(`Plan focus: ${data.planner.reason}`)
-  if (data.orchestrator?.reason) lines.push(`Decision: ${data.orchestrator.reason}`)
-  if (data.task?.tasks?.length) lines.push(`Next task: ${data.task.tasks[0].title}`)
-  if (data.resource?.resources?.length) lines.push(`Resource: ${data.resource.resources[0].title}`)
+  if (data.orchestrator?.reason) {
+    lines.push(`\nUnderstanding:`)
+    lines.push(data.orchestrator.reason)
+  }
 
-  return lines.join('\n\n') || 'I suggest you continue your workflow and attempt the quiz for deeper feedback.'
+  if (data.task?.tasks?.length) {
+    const focusedTasks = data.task.tasks.slice(0, 2)
+    lines.push(`\nAction plan:`)
+    focusedTasks.forEach((task, index) => {
+      lines.push(`${index + 1}. ${task.title} (${task.estimatedTime || 'short'}) - ${task.expectedOutcome || 'Practice this concept.'}`)
+    })
+  }
+
+  if (data.revision?.revision?.length) {
+    const firstRevision = data.revision.revision[0]
+    lines.push(`\nPriority fix:`)
+    lines.push(`${firstRevision.topic}: ${firstRevision.action}`)
+  }
+
+  if (data.resource?.resources?.length) {
+    const res = data.resource.resources[0]
+    lines.push(`\nHelpful resource:`)
+    lines.push(`${res.title} (${res.type})`)
+  }
+
+  return lines.join('\n') || 'Ask a doubt and I will break it down with examples, corrections, and a mini practice plan.'
 }
 
 export function AIMentorWidget() {
@@ -23,9 +90,9 @@ export function AIMentorWidget() {
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: 'Ask me anything about your learning path. I can guide your next best step.' },
+    { role: 'assistant', text: 'Hi, I am your Helping Assistant. Ask any doubt in any topic and I will explain it step-by-step.' },
   ])
-  const { currentGoal } = useAppStore()
+  const { currentGoal, progress, workflow } = useAppStore()
   const listRef = useRef(null)
 
   useEffect(() => {
@@ -35,12 +102,12 @@ export function AIMentorWidget() {
   }, [messages, typing])
 
   const placeholder = useMemo(() => {
-    if (currentGoal) return `Ask mentor about: ${currentGoal}`
-    return 'Ask your AI mentor...'
+    if (currentGoal) return `Ask a doubt about: ${currentGoal}`
+    return 'Ask your doubt in any topic...'
   }, [currentGoal])
 
-  const onSend = async () => {
-    const question = input.trim()
+  const onSend = async (forcedPrompt) => {
+    const question = (forcedPrompt || input).trim()
     if (!question || typing) return
 
     setInput('')
@@ -48,7 +115,17 @@ export function AIMentorWidget() {
     setTyping(true)
 
     try {
-      const payload = await workflowApi.run({ goal: question })
+      const context = {
+        currentGoal,
+        progress,
+        workflow,
+        history: [...messages, { role: 'user', text: question }],
+      }
+
+      const payload = await workflowApi.run({
+        goal: buildDoubtGoal(question, context),
+      })
+
       const finalText = extractMentorText(payload)
 
       let visible = ''
@@ -81,11 +158,23 @@ export function AIMentorWidget() {
           >
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-medium text-cyan-200">
-                <Sparkles className="h-4 w-4" /> AI Mentor
+                <Sparkles className="h-4 w-4" /> Helping Assistant
               </div>
               <button onClick={() => setOpen(false)}>
                 <X className="h-4 w-4" />
               </button>
+            </div>
+
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {quickPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => onSend(prompt)}
+                  className="rounded-full border border-cyan-300/25 bg-cyan-500/10 px-2.5 py-1 text-[11px] text-cyan-100 hover:bg-cyan-400/20"
+                >
+                  {prompt}
+                </button>
+              ))}
             </div>
 
             <div ref={listRef} className="mb-3 h-72 space-y-2 overflow-y-auto pr-1">
@@ -122,9 +211,12 @@ export function AIMentorWidget() {
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-14 w-14 items-center justify-center rounded-full border border-cyan-300/50 bg-linear-to-br from-cyan-400 to-blue-500 text-slate-950 shadow-[0_0_40px_rgba(34,211,238,0.5)]"
+        className="flex h-14 w-14 items-center justify-center rounded-full border border-cyan-300/50 bg-linear-to-br from-cyan-300 to-emerald-300 text-slate-950 shadow-[0_0_40px_rgba(16,185,129,0.45)]"
       >
-        <Bot className="h-6 w-6" />
+        <div className="relative">
+          <LifeBuoy className="h-6 w-6" />
+          <Brain className="absolute -right-2 -top-2 h-3.5 w-3.5" />
+        </div>
       </motion.button>
     </div>
   )
