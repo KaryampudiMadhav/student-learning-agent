@@ -9,7 +9,7 @@ export function PageContainer({ children }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="mx-auto w-full max-w-7xl px-4 pb-20 pt-6 sm:px-6 lg:px-10"
+      className="w-full pb-20 pt-6"
     >
       {children}
     </motion.main>

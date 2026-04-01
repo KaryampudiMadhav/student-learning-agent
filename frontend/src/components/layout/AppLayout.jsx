@@ -49,8 +49,8 @@ export function AppLayout({ children }) {
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-7xl gap-5 px-4 pt-5 sm:px-6 lg:px-10">
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-white/10 bg-slate-950/95 p-4 backdrop-blur-xl transition-transform md:static md:translate-x-0 md:rounded-2xl md:border ${ui.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="flex w-full items-start">
+        <aside className={`fixed bottom-0 left-0 top-16 z-40 w-64 border-r border-white/10 bg-slate-950/95 p-4 backdrop-blur-xl transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 md:rounded-none md:border-y-0 md:border-l-0 ${ui.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="mb-4 flex items-center justify-between md:hidden">
             <span className="text-sm text-cyan-300">Menu</span>
             <button onClick={closeSidebar}>
@@ -77,7 +77,7 @@ export function AppLayout({ children }) {
           </nav>
         </aside>
 
-        <motion.div layout className="w-full">{children}</motion.div>
+        <motion.div layout className="min-w-0 flex-1 px-4 pt-5 sm:px-6 lg:px-10">{children}</motion.div>
       </div>
 
       <AIMentorWidget />

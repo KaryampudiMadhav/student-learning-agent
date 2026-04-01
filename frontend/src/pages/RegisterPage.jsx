@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { authApi } from '../lib/api'
 import { useAppStore } from '../store/useAppStore'
 import { RippleButton } from '../components/common/RippleButton'
+import { AuthSplitLayout } from '../components/layout/AuthSplitLayout'
 
 void motion
 
@@ -31,7 +32,12 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <AuthSplitLayout
+      mode="register"
+      loading={loading}
+      identifier={form.email || form.name}
+      passwordLength={form.password.length}
+    >
       <motion.form
         onSubmit={onSubmit}
         initial={{ opacity: 0, y: 22 }}
@@ -80,6 +86,6 @@ export function RegisterPage() {
           </Link>
         </p>
       </motion.form>
-    </div>
+    </AuthSplitLayout>
   )
 }
