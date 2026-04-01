@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { BarChart3, Bot, Gauge, Home, LogOut, Menu, Rocket, Workflow } from 'lucide-react'
+import { BarChart3, Bot, Gauge, Home, LogOut, Menu, Rocket, Workflow, BookOpen, TrendingUp } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { ParticlesBackground } from '../background/ParticlesBackground'
 import { AIMentorWidget } from '../chat/AIMentorWidget'
@@ -10,6 +10,8 @@ void motion
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: Home },
   { to: '/workflow', label: 'Workflow', icon: Workflow },
+  { to: '/learning', label: 'Learning', icon: BookOpen },
+  { to: '/history', label: 'History', icon: TrendingUp },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/agents', label: 'Agent Logs', icon: Bot },
   { to: '/evaluation', label: 'Evaluation', icon: Gauge },

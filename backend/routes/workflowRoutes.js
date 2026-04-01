@@ -60,5 +60,16 @@ router.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+router.get("/history", async (req, res) => {
+  const sessionId = req.headers["x-session-id"];
+
+  const data = await Progress.findOne({ sessionId });
+
+  res.json({
+    history: data?.dailyLogs || [],
+    streak: data?.streak || 0,
+    currentDay: data?.currentDay || 1
+  });
+});
 
 export default router;

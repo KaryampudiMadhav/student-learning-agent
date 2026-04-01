@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BookOpen, ClipboardList, Goal, Sparkles } from 'lucide-react'
 import { workflowApi } from '../lib/api'
@@ -11,7 +11,8 @@ import { PageContainer } from '../components/layout/PageContainer'
 void motion
 
 export function WorkflowPage() {
-  const { hydrateFromWorkflow, setCurrentGoal, currentGoal, workflow } = useAppStore()
+  const navigate = useNavigate()
+  const { hydrateFromWorkflow, setCurrentGoal, currentGoal, workflow, setAgentLogs } = useAppStore()
   const [goal, setGoal] = useState(currentGoal)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -20,11 +21,17 @@ export function WorkflowPage() {
     if (!goal.trim()) return
     setLoading(true)
     setError('')
+    setAgentLogs([])
 
     try {
       const payload = await workflowApi.run({ goal })
       setCurrentGoal(goal)
       hydrateFromWorkflow(payload)
+      
+      // Navigate to learning page to see the workflow with agent logs
+      setTimeout(() => {
+        navigate('/learning')
+      }, 500)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -96,14 +103,18 @@ export function WorkflowPage() {
           <div className="space-y-2">
             {tasks.slice(0, 4).map((task, idx) => (
               <motion.div
-                key={`${task.title}-${idx}`}
+                key={`${typeof task === 'string' ? task : task.title || task}-${idx}`}
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.08 }}
                 className="rounded-lg border border-white/10 bg-slate-900/45 px-3 py-2"
               >
-                <p className="text-sm font-medium text-white">{task.title}</p>
-                <p className="text-xs text-slate-400">{task.type} • {task.estimatedTime}</p>
+                <p className="text-sm font-medium text-white">
+                  {typeof task === 'string' ? task : task.title || task.description}
+                </p>
+                {typeof task === 'object' && task.type && (
+                  <p className="text-xs text-slate-400">{task.type} {task.estimatedTime ? `• ${task.estimatedTime}` : ''}</p>
+                )}
               </motion.div>
             ))}
             {!tasks.length ? <p className="text-sm text-slate-400">Tasks will appear here.</p> : null}

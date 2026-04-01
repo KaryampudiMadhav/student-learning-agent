@@ -240,13 +240,16 @@ export const runWorkflow = async (req, res) => {
       success: true,
       sessionId,
       data: {
-        planner: plan,
+        day: currentDay,
+        topic,
         resource: resources,
         task: tasks,
         evaluation,
         orchestrator: decision,
         revision,
-        memory: finalMemory
+        streak: finalMemory.streak,
+        history: finalMemory.dailyLogs,
+        currentDay: finalMemory.currentDay
       }
     });
 
