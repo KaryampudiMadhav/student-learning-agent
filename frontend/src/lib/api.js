@@ -70,6 +70,8 @@ export const workflowApi = {
   run: (data) => apiRequest('/api/workflow/run', { method: 'POST', body: data }),
   progress: () => apiRequest('/api/workflow/progress'),
   logs: () => apiRequest('/api/workflow/logs'),
+  history: () => apiRequest('/api/workflow/history'),
   reset: () => apiRequest('/api/workflow/reset', { method: 'POST', body: {} }),
   health: () => apiRequest('/api/workflow/health', { includeAuth: false }),
+  submitAnswers: (data) => apiRequest('/api/workflow/run', { method: 'POST', body: data }),
 }

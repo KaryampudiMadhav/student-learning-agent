@@ -12,6 +12,8 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { QuizPage } from './pages/QuizPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { WorkflowPage } from './pages/WorkflowPage'
+import { LearningPage } from './pages/LearningPage'
+import { HistoryPage } from './pages/HistoryPage'
 
 function Protected({ children }) {
   const token = useAppStore((state) => state.token)
@@ -39,6 +41,8 @@ export default function App() {
 
         <Route path="/dashboard" element={<Protected><DashboardPage /></Protected>} />
         <Route path="/workflow" element={<Protected><WorkflowPage /></Protected>} />
+        <Route path="/learning" element={<Protected><LearningPage /></Protected>} />
+        <Route path="/history" element={<Protected><HistoryPage /></Protected>} />
         <Route path="/quiz" element={<Protected><QuizPage /></Protected>} />
         <Route path="/evaluation" element={<Protected><EvaluationPage /></Protected>} />
         <Route path="/agents" element={<Protected><AgentsPage /></Protected>} />

@@ -22,22 +22,42 @@ export const callGemini = async (prompt, systemInstruction = null) => {
     };
   }
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const maxAttempts = 4;
 
-    if (!response.ok) {
+  const isRetryableStatus = (status) => status === 429 || status === 503;
+
+  try {
+    let data = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        data = await response.json();
+        break;
+      }
+
       const errorText = await response.text();
       console.error("Gemini API Error:", response.status, errorText);
-      throw new Error(`Gemini API request failed with status: ${response.status}`);
+
+      if (!isRetryableStatus(response.status) || attempt === maxAttempts) {
+        throw new Error(`Gemini API request failed with status: ${response.status}`);
+      }
+
+      const backoffMs = Math.min(8000, 800 * (2 ** (attempt - 1)));
+      await sleep(backoffMs);
     }
 
-    const data = await response.json();
+    if (!data) {
+      throw new Error("Gemini API request failed without response data");
+    }
     
     if (data.candidates && data.candidates.length > 0) {
       const textResponse = data.candidates[0].content.parts[0].text;

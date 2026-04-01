@@ -22,6 +22,6 @@ export const updateMemory = async (sessionId, data) => {
   return await Progress.findOneAndUpdate(
     { sessionId },
     { $set: data },
-    { new: true }
+    { returnDocument: "after" }
   );
 };

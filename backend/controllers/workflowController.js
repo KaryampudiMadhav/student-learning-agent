@@ -72,6 +72,7 @@ export const runWorkflow = async (req, res) => {
 
     // 🧠 STEP 1: MEMORY
     let memory = await getMemory(sessionId);
+    const currentDay = memory.currentDay || 1;
 
     await updateMemory(sessionId, { userId });
 
@@ -90,6 +91,8 @@ export const runWorkflow = async (req, res) => {
     if (diffDays === 1) {
       streak += 1;
     } else if (diffDays > 1) {
+      streak = 1;
+    } else if (streak === 0) {
       streak = 1;
     }
 
@@ -225,9 +228,22 @@ export const runWorkflow = async (req, res) => {
     }
 
     // 🔥 FINAL UPDATE
+    const historyEntry = {
+      day: currentDay,
+      topic,
+      score: evaluation?.score,
+      difficulty: decision.difficultyAction || memory.difficulty,
+      status: evaluation?.score !== undefined
+        ? (evaluation.score >= 75 ? 'completed' : 'repeat')
+        : 'in_progress',
+      date: new Date(),
+    };
+
     await updateMemory(sessionId, {
       currentTopic: decision.nextTopic || topic,
-      difficulty: decision.difficultyAction || memory.difficulty
+      difficulty: decision.difficultyAction || memory.difficulty,
+      streak,
+      dailyLogs: [...(memory.dailyLogs || []), historyEntry],
     });
 
     const finalMemory = await getMemory(sessionId);
@@ -240,13 +256,16 @@ export const runWorkflow = async (req, res) => {
       success: true,
       sessionId,
       data: {
-        planner: plan,
+        day: finalMemory.currentDay || memory.currentDay || 1,
+        topic,
         resource: resources,
         task: tasks,
         evaluation,
         orchestrator: decision,
         revision,
-        memory: finalMemory
+        streak: finalMemory.streak,
+        history: finalMemory.dailyLogs,
+        currentDay: finalMemory.currentDay
       }
     });
 

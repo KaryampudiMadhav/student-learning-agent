@@ -60,5 +60,51 @@ router.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+router.get("/history", protect, async (req, res) => {
+  try {
+    const sessionId = req.headers["x-session-id"];
+
+    const data = await Progress.findOne({
+      $or: [
+        { userId: req.userId },
+        ...(sessionId ? [{ sessionId }] : []),
+      ],
+    }).sort?.({ updatedAt: -1 });
+
+    const dailyProgress = (data?.dailyProgress || []).map((entry) => ({
+      day: entry.day || undefined,
+      topic: entry.topic || 'Learning',
+      score: entry.score,
+      status: entry.score >= 75 ? 'completed' : 'repeat',
+      date: entry.date,
+      tasksCompleted: entry.tasksCompleted,
+    }));
+
+    const learningHistory = (data?.learningHistory || []).map((entry) => ({
+      day: entry.day || undefined,
+      topic: entry.topic || 'Learning',
+      score: entry.score,
+      status: entry.action === 'completed' ? 'completed' : entry.action || 'in_progress',
+      date: entry.date,
+    }));
+
+    const legacyLogs = (data?.dailyLogs || []).map((entry) => ({
+      ...entry,
+      status: entry.status || (entry.score >= 75 ? 'completed' : 'repeat'),
+    }));
+
+    const history = [...dailyProgress, ...learningHistory, ...legacyLogs].sort(
+      (a, b) => new Date(a.date || 0) - new Date(b.date || 0),
+    );
+
+    res.json({
+      history,
+      streak: data?.streak || 0,
+      currentDay: data?.currentDay || 1,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 export default router;
