@@ -50,7 +50,10 @@ export function AppLayout({ children }) {
       </header>
 
       <div className="flex w-full items-start">
-        <aside className={`fixed bottom-0 left-0 top-16 z-40 w-64 border-r border-white/10 bg-slate-950/95 p-4 backdrop-blur-xl transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 md:rounded-none md:border-y-0 md:border-l-0 ${ui.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed bottom-0 left-0 top-16 z-40 w-64 overflow-hidden border-r border-white/15 bg-slate-950/96 p-4 shadow-[0_0_40px_rgba(2,6,23,0.65)] backdrop-blur-2xl transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 md:rounded-none md:border-y-0 md:border-l-0 ${ui.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(34,211,238,0.16),transparent_28%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.12),transparent_26%),linear-gradient(180deg,rgba(15,23,42,0.85),rgba(2,6,23,0.96))] opacity-80" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(56,189,248,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,189,248,0.06)_1px,transparent_1px)] bg-[size:28px_28px] opacity-30" />
+          <div className="relative z-10">
           <div className="mb-4 flex items-center justify-between md:hidden">
             <span className="text-sm text-cyan-300">Menu</span>
             <button onClick={closeSidebar}>
@@ -75,6 +78,7 @@ export function AppLayout({ children }) {
               )
             })}
           </nav>
+          </div>
         </aside>
 
         <motion.div layout className="min-w-0 flex-1 px-4 pt-5 sm:px-6 lg:px-10">{children}</motion.div>
