@@ -10,7 +10,6 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { QuizPage } from './pages/QuizPage'
-import { RegisterPage } from './pages/RegisterPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { WorkflowPage } from './pages/WorkflowPage'
 
@@ -34,7 +33,7 @@ export default function App() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<AuthOnly><LoginPage /></AuthOnly>} />
-        <Route path="/register" element={<AuthOnly><RegisterPage /></AuthOnly>} />
+        <Route path="/register" element={<AuthOnly><LoginPage /></AuthOnly>} />
         <Route path="/forgot-password" element={<AuthOnly><ForgotPasswordPage /></AuthOnly>} />
         <Route path="/reset-password/:token" element={<AuthOnly><ResetPasswordPage /></AuthOnly>} />
 
