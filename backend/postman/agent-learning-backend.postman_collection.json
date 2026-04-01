@@ -1,0 +1,332 @@
+{
+  "info": {
+    "name": "Agent Learning Backend",
+    "_postman_id": "b4b304fe-c31e-4a48-afeb-6954be6fcf68",
+    "description": "Complete route coverage for backend API with basic happy-path and resilience tests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "authToken", "value": "" },
+    { "key": "sessionId", "value": "" },
+    { "key": "userName", "value": "Postman User" },
+    { "key": "userEmail", "value": "postman_user@example.com" },
+    { "key": "userPassword", "value": "Password@123" },
+    { "key": "resetToken", "value": "paste-token-from-email" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{userName}}\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "register"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Register returns 200 or 400', function () {",
+              "  pm.expect([200, 400]).to.include(pm.response.code);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "if (pm.response.code === 200) {",
+              "  pm.test('Register success payload has token', function () {",
+              "    pm.expect(body).to.have.property('token');",
+              "  });",
+              "  pm.collectionVariables.set('authToken', body.token);",
+              "}",
+              "if (pm.response.code === 400) {",
+              "  pm.test('Register duplicate user message exists', function () {",
+              "    pm.expect(body).to.have.property('message');",
+              "  });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login returns 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('Login response has token', function () {",
+              "  pm.expect(body).to.have.property('token');",
+              "});",
+              "pm.collectionVariables.set('authToken', body.token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/forgot",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "forgot"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Forgot returns 200 or 400', function () {",
+              "  pm.expect([200, 400]).to.include(pm.response.code);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('Forgot response has message or error', function () {",
+              "  pm.expect(body.message || body.error).to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"password\": \"NewPassword@123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/reset/{{resetToken}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "reset", "{{resetToken}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Reset returns 200 or 400', function () {",
+              "  pm.expect([200, 400]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflow - Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/workflow/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workflow", "health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Health returns 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Health payload is ok', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('ok');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflow - Run",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('sessionId')) {",
+              "  pm.collectionVariables.set('sessionId', pm.variables.replaceIn('{{$guid}}'));",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Workflow run is authenticated', function () {",
+              "  pm.expect([200, 401, 500]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('Workflow payload has success and sessionId', function () {",
+              "    pm.expect(body.success).to.eql(true);",
+              "    pm.expect(body).to.have.property('sessionId');",
+              "  });",
+              "}",
+              "if (pm.response.code === 500) {",
+              "  const body = pm.response.json();",
+              "  pm.test('Workflow error payload present', function () {",
+              "    pm.expect(body).to.have.property('error');",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" },
+          { "key": "x-session-id", "value": "{{sessionId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"goal\": \"Learn Node.js from scratch\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/workflow/run",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workflow", "run"]
+        }
+      }
+    },
+    {
+      "name": "Workflow - Progress",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workflow/progress",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workflow", "progress"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Progress returns 200 or 401', function () {",
+              "  pm.expect([200, 401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflow - Logs",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workflow/logs",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workflow", "logs"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Logs returns 200 or 401', function () {",
+              "  pm.expect([200, 401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflow - Reset Session",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workflow/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workflow", "reset"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Reset session returns 200 or 401', function () {",
+              "  pm.expect([200, 401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

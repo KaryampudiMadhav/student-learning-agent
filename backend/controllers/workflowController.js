@@ -4,6 +4,40 @@ import { plannerAgent } from './../agents/plannerAgent.js';
 import { resourceAgent } from './../agents/resourceAgent.js';
 import { taskAgent } from './../agents/taskAgent.js';
 import { orchestratorAgent } from './../agents/orchestratorAgent.js';
+import { revisionAgent } from './../agents/revisionAgent.js';
+import { getMemory, updateMemory } from "../agents/memoryAgent.js";
+
+const mergeWeakAreas = (existingWeakAreas = [], newWeakAreas = []) => {
+  const map = new Map();
+
+  for (const item of existingWeakAreas) {
+    if (!item?.topic) continue;
+    map.set(item.topic, {
+      topic: item.topic,
+      count: item.count || 1,
+      lastSeen: item.lastSeen || new Date()
+    });
+  }
+
+  for (const topic of newWeakAreas) {
+    if (!topic) continue;
+    const existing = map.get(topic);
+
+    if (existing) {
+      existing.count += 1;
+      existing.lastSeen = new Date();
+      map.set(topic, existing);
+    } else {
+      map.set(topic, {
+        topic,
+        count: 1,
+        lastSeen: new Date()
+      });
+    }
+  }
+
+  return Array.from(map.values());
+};
 
 
 // 🔥 AGENT LOGGER
@@ -104,7 +138,7 @@ export const runWorkflow = async (req, res) => {
       ];
 
       // 🧠 WEAK AREA TRACKING
-      const updatedWeakAreas = updatedWeakAreas(
+      const updatedWeakAreas = mergeWeakAreas(
         memory.weakAreas || [],
         evaluation.weakAreas || []
       );
